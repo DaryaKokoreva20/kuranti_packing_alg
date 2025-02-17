@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Упаковка прямоугольников (New)</title>
+    <title>Упаковка прямоугольников с минимизацией пустот</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -29,7 +29,7 @@
     </style>
 </head>
 <body>
-    <h2>Алгоритм упаковки прямоугольников</h2>
+    <h2>Алгоритм упаковки прямоугольников (оптимизированный)</h2>
     <textarea id="inputData">[
         { "w": 235, "h": 296 }, { "w": 263, "h": 293 }, { "w": 288, "h": 64 }, { "w": 230, "h": 214 },
         { "w": 100, "h": 59 }, { "w": 53, "h": 158 }, { "w": 111, "h": 147 }, { "w": 78, "h": 56 },
@@ -53,10 +53,8 @@
                 const inputText = document.getElementById("inputData").value;
                 let rectangles = JSON.parse(inputText);
 
-                // Преобразуем данные
                 rectangles = rectangles.map(r => ({ width: r.w, height: r.h }));
 
-                // Запускаем алгоритм упаковки
                 sheets = [];
                 packRectangles(rectangles);
                 drawSheets();
@@ -70,12 +68,14 @@
 
             for (let rect of rectangles) {
                 let placed = false;
+
                 for (let sheet of sheets) {
                     if (placeRectangle(sheet, rect)) {
                         placed = true;
                         break;
                     }
                 }
+
                 if (!placed) {
                     let newSheet = createSheet();
                     placeRectangle(newSheet, rect);
@@ -94,25 +94,40 @@
         }
 
         function placeRectangle(sheet, rect) {
+            let bestFit = null;
+            let bestFitIndex = -1;
+
             for (let i = 0; i < sheet.freeSpaces.length; i++) {
                 let space = sheet.freeSpaces[i];
 
                 if (rect.width <= space.width && rect.height <= space.height) {
-                    rect.x = space.x;
-                    rect.y = space.y;
-                    sheet.rectangles.push(rect);
-                    splitSpace(sheet, space, rect);
-                    return true;
+                    if (!bestFit || space.width * space.height < bestFit.area) {
+                        bestFit = { index: i, space, area: space.width * space.height };
+                        bestFitIndex = i;
+                    }
                 }
 
                 if (rect.height <= space.width && rect.width <= space.height) {
-                    [rect.width, rect.height] = [rect.height, rect.width];
-                    rect.x = space.x;
-                    rect.y = space.y;
-                    sheet.rectangles.push(rect);
-                    splitSpace(sheet, space, rect);
-                    return true;
+                    if (!bestFit || space.width * space.height < bestFit.area) {
+                        bestFit = { index: i, space, area: space.width * space.height, rotated: true };
+                        bestFitIndex = i;
+                    }
                 }
+            }
+
+            if (bestFit) {
+                let space = sheet.freeSpaces[bestFitIndex];
+
+                if (bestFit.rotated) {
+                    [rect.width, rect.height] = [rect.height, rect.width];
+                }
+
+                rect.x = space.x;
+                rect.y = space.y;
+                sheet.rectangles.push(rect);
+
+                splitSpace(sheet, space, rect);
+                return true;
             }
             return false;
         }

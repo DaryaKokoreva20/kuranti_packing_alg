@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Упаковка прямоугольников</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px;
+        }
+        textarea {
+            width: 500px;
+            height: 100px;
+        }
+        canvas {
+            border: 1px solid black;
+            margin-top: 10px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Алгоритм упаковки прямоугольников</h2>
+    <textarea id="inputData">[
+        { "w": 235, "h": 296 }, { "w": 263, "h": 293 }, { "w": 288, "h": 64 }, { "w": 230, "h": 214 },
+        { "w": 100, "h": 59 }, { "w": 53, "h": 158 }, { "w": 111, "h": 147 }, { "w": 78, "h": 56 },
+        { "w": 62, "h": 37 }, { "w": 130, "h": 259 }, { "w": 106, "h": 255 }, { "w": 248, "h": 121 },
+        { "w": 240, "h": 125 }, { "w": 185, "h": 120 }, { "w": 175, "h": 61 }, { "w": 109, "h": 39 },
+        { "w": 82, "h": 35 }, { "w": 228, "h": 114 }, { "w": 158, "h": 86 }, { "w": 33, "h": 41 }, { "w": 110, "h": 55 }
+    ]</textarea>
+    <button onclick="startPacking()">Запустить упаковку</button>
+    <canvas id="packingCanvas" width="1000" height="2000"></canvas>
+
+    <script>
+        const SHEET_WIDTH = 900;
+        const SHEET_HEIGHT = 600;
+
+        function potpack(boxes, width, height) {
+            let area = 0;
+            for (let box of boxes) area += box.w * box.h;
+
+            let spaces = [{ x: 0, y: 0, w: width, h: height }];
+            let packedBoxes = [], remainingBoxes = [];
+
+            boxes.sort((a, b) => b.h - a.h);
+
+            for (let box of boxes) {
+                let placed = false;
+                for (let i = spaces.length - 1; i >= 0; i--) {
+                    let space = spaces[i];
+
+                    if (box.w > space.w || box.h > space.h) continue;
+
+                    box.x = space.x;
+                    box.y = space.y;
+                    packedBoxes.push(box);
+                    placed = true;
+
+                    if (box.w === space.w && box.h === space.h) {
+                        spaces.splice(i, 1);
+                    } else if (box.h === space.h) {
+                        space.x += box.w;
+                        space.w -= box.w;
+                    } else if (box.w === space.w) {
+                        space.y += box.h;
+                        space.h -= box.h;
+                    } else {
+                        spaces.push({ x: space.x + box.w, y: space.y, w: space.w - box.w, h: box.h });
+                        space.y += box.h;
+                        space.h -= box.h;
+                    }
+                    break;
+                }
+                if (!placed) remainingBoxes.push(box);
+            }
+
+            return { packed: packedBoxes, remaining: remainingBoxes };
+        }
+
+        function startPacking() {
+            try {
+                const inputText = document.getElementById("inputData").value;
+                let rectangles = JSON.parse(inputText);
+
+                let sheets = [];
+                let remaining = rectangles;
+
+                while (remaining.length > 0) {
+                    let result = potpack(remaining, SHEET_WIDTH, SHEET_HEIGHT);
+                    sheets.push(result.packed);
+                    remaining = result.remaining;
+                }
+
+                drawSheets(sheets);
+            } catch (error) {
+                alert("Ошибка в формате JSON! Проверь ввод.");
+            }
+        }
+
+        function drawSheets(sheets) {
+            const canvas = document.getElementById("packingCanvas");
+            const ctx = canvas.getContext("2d");
+
+            let offsetX = 0, offsetY = 0, gap = 20;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "14px Arial";
+
+            for (let i = 0; i < sheets.length; i++) {
+                ctx.strokeRect(offsetX, offsetY, SHEET_WIDTH, SHEET_HEIGHT);
+                ctx.fillText(`Лист ${i + 1}`, offsetX + 10, offsetY + 20);
+
+                for (let rect of sheets[i]) {
+                    ctx.fillStyle = `hsl(${Math.random() * 360}, 60%, 70%)`;
+                    ctx.fillRect(offsetX + rect.x, offsetY + rect.y, rect.w, rect.h);
+                    ctx.strokeRect(offsetX + rect.x, offsetY + rect.y, rect.w, rect.h);
+                }
+
+                offsetY += SHEET_HEIGHT + gap;
+            }
+        }
+    </script>
+</body>
+</html>
