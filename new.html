@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Упаковка прямоугольников</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px;
+        }
+        textarea {
+            width: 500px;
+            height: 100px;
+        }
+        canvas {
+            border: 1px solid black;
+            margin-top: 10px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Алгоритм упаковки прямоугольников</h2>
+    <textarea id="inputData">[
+        { "w": 235, "h": 296 }, { "w": 263, "h": 293 }, { "w": 288, "h": 64 }, { "w": 230, "h": 214 },
+        { "w": 100, "h": 59 }, { "w": 53, "h": 158 }, { "w": 111, "h": 147 }, { "w": 78, "h": 56 },
+        { "w": 62, "h": 37 }, { "w": 130, "h": 259 }, { "w": 106, "h": 255 }, { "w": 248, "h": 121 },
+        { "w": 240, "h": 125 }, { "w": 185, "h": 120 }, { "w": 175, "h": 61 }, { "w": 109, "h": 39 },
+        { "w": 82, "h": 35 }, { "w": 228, "h": 114 }, { "w": 158, "h": 86 }, { "w": 33, "h": 41 }, { "w": 110, "h": 55 }
+    ]</textarea>
+    <button onclick="startPacking()">Запустить упаковку</button>
+    <canvas id="packingCanvas" width="1000" height="2000"></canvas>
+
+    <script>
+        const canvas = document.getElementById("packingCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const SHEET_WIDTH = 900;
+        const SHEET_HEIGHT = 600;
+        let sheets = [];
+
+        function startPacking() {
+            try {
+                const inputText = document.getElementById("inputData").value;
+                let rectangles = JSON.parse(inputText);
+
+                // Преобразуем данные
+                rectangles = rectangles.map(r => ({ width: r.w, height: r.h }));
+
+                // Запускаем алгоритм упаковки
+                sheets = [];
+                packRectangles(rectangles);
+                drawSheets();
+            } catch (error) {
+                alert("Ошибка в формате JSON! Проверь ввод.");
+            }
+        }
+
+        function packRectangles(rectangles) {
+            rectangles.sort((a, b) => b.width * b.height - a.width * a.height);
+
+            for (let rect of rectangles) {
+                let placed = false;
+                for (let sheet of sheets) {
+                    if (placeRectangle(sheet, rect)) {
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    let newSheet = createSheet();
+                    placeRectangle(newSheet, rect);
+                    sheets.push(newSheet);
+                }
+            }
+        }
+
+        function createSheet() {
+            return {
+                width: SHEET_WIDTH,
+                height: SHEET_HEIGHT,
+                freeSpaces: [{ x: 0, y: 0, width: SHEET_WIDTH, height: SHEET_HEIGHT }],
+                rectangles: [],
+            };
+        }
+
+        function placeRectangle(sheet, rect) {
+            for (let i = 0; i < sheet.freeSpaces.length; i++) {
+                let space = sheet.freeSpaces[i];
+
+                if (rect.width <= space.width && rect.height <= space.height) {
+                    rect.x = space.x;
+                    rect.y = space.y;
+                    sheet.rectangles.push(rect);
+                    splitSpace(sheet, space, rect);
+                    return true;
+                }
+
+                if (rect.height <= space.width && rect.width <= space.height) {
+                    [rect.width, rect.height] = [rect.height, rect.width];
+                    rect.x = space.x;
+                    rect.y = space.y;
+                    sheet.rectangles.push(rect);
+                    splitSpace(sheet, space, rect);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function splitSpace(sheet, space, rect) {
+            let newSpaces = [];
+
+            if (space.width - rect.width > 0) {
+                newSpaces.push({
+                    x: space.x + rect.width,
+                    y: space.y,
+                    width: space.width - rect.width,
+                    height: space.height,
+                });
+            }
+
+            if (space.height - rect.height > 0) {
+                newSpaces.push({
+                    x: space.x,
+                    y: space.y + rect.height,
+                    width: rect.width,
+                    height: space.height - rect.height,
+                });
+            }
+
+            sheet.freeSpaces.splice(sheet.freeSpaces.indexOf(space), 1);
+            sheet.freeSpaces.push(...newSpaces);
+        }
+
+        function drawSheets() {
+            let offsetX = 0;
+            let offsetY = 0;
+            let gap = 20;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "14px Arial";
+
+            for (let sheet of sheets) {
+                ctx.strokeRect(offsetX, offsetY, SHEET_WIDTH, SHEET_HEIGHT);
+                ctx.fillText(`Лист ${sheets.indexOf(sheet) + 1}`, offsetX + 10, offsetY + 20);
+
+                for (let rect of sheet.rectangles) {
+                    ctx.fillStyle = `hsl(${Math.random() * 360}, 60%, 70%)`;
+                    ctx.fillRect(offsetX + rect.x, offsetY + rect.y, rect.width, rect.height);
+                    ctx.strokeRect(offsetX + rect.x, offsetY + rect.y, rect.width, rect.height);
+                }
+
+                offsetY += SHEET_HEIGHT + gap;
+            }
+        }
+    </script>
+</body>
+</html>
