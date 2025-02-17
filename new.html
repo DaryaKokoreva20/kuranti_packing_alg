@@ -38,7 +38,10 @@
         { "w": 82, "h": 35 }, { "w": 228, "h": 114 }, { "w": 158, "h": 86 }, { "w": 33, "h": 41 }, { "w": 110, "h": 55 }
     ]</textarea>
     <button onclick="startPacking()">Запустить упаковку</button>
+    <div id="freeSpaceInfo" class="info"></div>
     <canvas id="packingCanvas" width="1000" height="2000"></canvas>
+    
+
 
     <script>
         const canvas = document.getElementById("packingCanvas");
@@ -52,26 +55,32 @@
             try {
                 const inputText = document.getElementById("inputData").value;
                 let rectangles = JSON.parse(inputText);
-
-                // Преобразуем данные
                 rectangles = rectangles.map(r => ({ width: r.w, height: r.h }));
 
-                // Запускаем алгоритм упаковки
                 sheets = [];
-                packRectangles(rectangles);
+                let remainingSpace = SHEET_WIDTH * SHEET_HEIGHT; // Инициализация полной площади листа
+                let beginSpace = remainingSpace
+                remainingSpace = packRectangles(rectangles, remainingSpace);
+                remainingSpaceInPercent = Math.floor(remainingSpace * 100 / beginSpace)
                 drawSheets();
+
+                document.getElementById("freeSpaceInfo").textContent = 
+                    `Свободная площадь на первом листе: ${remainingSpaceInPercent}% px²`;
+
+                return remainingSpace; // Возвращаем оставшуюся площадь
             } catch (error) {
                 alert("Ошибка в формате JSON! Проверь ввод.");
             }
         }
 
-        function packRectangles(rectangles) {
+        function packRectangles(rectangles, remainingSpace) {
             rectangles.sort((a, b) => b.width * b.height - a.width * a.height);
 
             for (let rect of rectangles) {
                 let placed = false;
                 for (let sheet of sheets) {
                     if (placeRectangle(sheet, rect)) {
+                        remainingSpace -= rect.width * rect.height; // Вычитаем площадь прямоугольника
                         placed = true;
                         break;
                     }
@@ -82,7 +91,10 @@
                     sheets.push(newSheet);
                 }
             }
+            return remainingSpace;
         }
+
+
 
         function createSheet() {
             return {
