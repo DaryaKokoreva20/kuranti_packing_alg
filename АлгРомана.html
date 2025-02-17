@@ -38,16 +38,16 @@
         { "w": 82, "h": 35 }, { "w": 228, "h": 114 }, { "w": 158, "h": 86 }, { "w": 33, "h": 41 }, { "w": 110, "h": 55 }
     ]</textarea>
     <button onclick="startPacking()">Запустить упаковку</button>
+    <div id="freeSpaceInfo" class="info"></div>
     <canvas id="packingCanvas" width="1000" height="2000"></canvas>
 
     <script>
         const SHEET_WIDTH = 900;
         const SHEET_HEIGHT = 600;
+        const begin_space = SHEET_WIDTH * SHEET_HEIGHT;
 
         function potpack(boxes, width, height) {
-            let area = 0;
-            for (let box of boxes) area += box.w * box.h;
-
+            let remaining_space = SHEET_WIDTH * SHEET_HEIGHT;
             let spaces = [{ x: 0, y: 0, w: width, h: height }];
             let packedBoxes = [], remainingBoxes = [];
 
@@ -62,7 +62,10 @@
 
                     box.x = space.x;
                     box.y = space.y;
+                    let box_area = box.w * box.h;
                     packedBoxes.push(box);
+                    remaining_space -= box_area;
+
                     placed = true;
 
                     if (box.w === space.w && box.h === space.h) {
@@ -83,7 +86,7 @@
                 if (!placed) remainingBoxes.push(box);
             }
 
-            return { packed: packedBoxes, remaining: remainingBoxes };
+            return { packed: packedBoxes, remaining: remainingBoxes, result_space: remaining_space };
         }
 
         function startPacking() {
@@ -93,14 +96,25 @@
 
                 let sheets = [];
                 let remaining = rectangles;
+                let result_space = begin_space; // Полная площадь первого листа
+                let area_percents = 100; // Процент свободного места
 
                 while (remaining.length > 0) {
                     let result = potpack(remaining, SHEET_WIDTH, SHEET_HEIGHT);
                     sheets.push(result.packed);
                     remaining = result.remaining;
+
+                    if (sheets.length === 1) {
+                        result_space = result.result_space; // Сохраняем только для первого листа
+                        area_percents = Math.floor(result_space * 100 / begin_space);
+                    }
                 }
 
+                document.getElementById("freeSpaceInfo").textContent = 
+                    `Свободная площадь на первом листе: ${area_percents}% px²`;
+
                 drawSheets(sheets);
+                return area_percents;
             } catch (error) {
                 alert("Ошибка в формате JSON! Проверь ввод.");
             }
@@ -127,6 +141,7 @@
                 offsetY += SHEET_HEIGHT + gap;
             }
         }
+
     </script>
 </body>
 </html>
