@@ -38,10 +38,8 @@
         { "w": 82, "h": 35 }, { "w": 228, "h": 114 }, { "w": 158, "h": 86 }, { "w": 33, "h": 41 }, { "w": 110, "h": 55 }
     ]</textarea>
     <button onclick="startPacking()">Запустить упаковку</button>
-    <div id="freeSpaceInfo" class="info"></div>
+    <div id="freeSpaceInfo"></div>
     <canvas id="packingCanvas" width="1000" height="2000"></canvas>
-    
-
 
     <script>
         const canvas = document.getElementById("packingCanvas");
@@ -54,52 +52,51 @@
         function startPacking() {
             try {
                 const inputText = document.getElementById("inputData").value;
-                let rectangles = JSON.parse(inputText);
-                rectangles = rectangles.map(r => ({ width: r.w, height: r.h }));
+                let rectangles = JSON.parse(inputText).map(r => ({ width: r.w, height: r.h }));
+
+                rectangles.sort((a, b) => b.width * b.height - a.width * a.height); // Сортировка по площади
 
                 sheets = [];
-                let remainingSpace = SHEET_WIDTH * SHEET_HEIGHT; // Инициализация полной площади листа
-                let beginSpace = remainingSpace
-                remainingSpace = packRectangles(rectangles, remainingSpace);
-                remainingSpaceInPercent = Math.floor(remainingSpace * 100 / beginSpace)
-                drawSheets();
+                let totalArea = SHEET_WIDTH * SHEET_HEIGHT;
+                let remainingSpace = totalArea;
+
+                for (let rect of rectangles) {
+                    if (!placeInExistingSheets(rect)) {
+                        remainingSpace -= addNewSheet(rect);
+                    }
+                }
 
                 document.getElementById("freeSpaceInfo").textContent = 
-                    `Свободная площадь на первом листе: ${remainingSpaceInPercent}% px²`;
+                    `Свободная площадь на первом листе: ${Math.floor((remainingSpace / totalArea) * 100)}% px²`;
+
+                drawSheets();
             } catch (error) {
                 alert("Ошибка в формате JSON! Проверь ввод.");
             }
         }
 
-        function packRectangles(rectangles, remainingSpace) {
-            rectangles.sort((a, b) => b.width * b.height - a.width * a.height);
-
-            for (let rect of rectangles) {
-                let placed = false;
-                for (let sheet of sheets) {
-                    if (placeRectangle(sheet, rect)) {
-                        remainingSpace -= rect.width * rect.height; // Вычитаем площадь прямоугольника
-                        placed = true;
-                        break;
-                    }
-                }
-                if (!placed) {
-                    let newSheet = createSheet();
-                    placeRectangle(newSheet, rect);
-                    sheets.push(newSheet);
+        function placeInExistingSheets(rect) {
+            for (let sheet of sheets) {
+                if (placeRectangle(sheet, rect)) {
+                    return true;
                 }
             }
-            return remainingSpace;
+            return false;
         }
 
-
+        function addNewSheet(rect) {
+            let newSheet = createSheet();
+            placeRectangle(newSheet, rect);
+            sheets.push(newSheet);
+            return rect.width * rect.height;
+        }
 
         function createSheet() {
             return {
                 width: SHEET_WIDTH,
                 height: SHEET_HEIGHT,
                 freeSpaces: [{ x: 0, y: 0, width: SHEET_WIDTH, height: SHEET_HEIGHT }],
-                rectangles: [],
+                rectangles: []
             };
         }
 
@@ -108,57 +105,39 @@
                 let space = sheet.freeSpaces[i];
 
                 if (rect.width <= space.width && rect.height <= space.height) {
-                    rect.x = space.x;
-                    rect.y = space.y;
-                    sheet.rectangles.push(rect);
-                    splitSpace(sheet, space, rect);
-                    return true;
+                    return finalizePlacement(sheet, space, rect);
                 }
 
                 if (rect.height <= space.width && rect.width <= space.height) {
                     [rect.width, rect.height] = [rect.height, rect.width];
-                    rect.x = space.x;
-                    rect.y = space.y;
-                    sheet.rectangles.push(rect);
-                    splitSpace(sheet, space, rect);
-                    return true;
+                    return finalizePlacement(sheet, space, rect);
                 }
             }
             return false;
         }
 
-        function splitSpace(sheet, space, rect) {
-            let newSpaces = [];
+        function finalizePlacement(sheet, space, rect) {
+            rect.x = space.x;
+            rect.y = space.y;
+            sheet.rectangles.push(rect);
+            updateFreeSpaces(sheet, space, rect);
+            return true;
+        }
+
+        function updateFreeSpaces(sheet, space, rect) {
+            sheet.freeSpaces = sheet.freeSpaces.filter(s => s !== space);
 
             if (space.width - rect.width > 0) {
-                newSpaces.push({
-                    x: space.x + rect.width,
-                    y: space.y,
-                    width: space.width - rect.width,
-                    height: space.height,
-                });
+                sheet.freeSpaces.push({ x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: space.height });
             }
-
             if (space.height - rect.height > 0) {
-                newSpaces.push({
-                    x: space.x,
-                    y: space.y + rect.height,
-                    width: rect.width,
-                    height: space.height - rect.height,
-                });
+                sheet.freeSpaces.push({ x: space.x, y: space.y + rect.height, width: rect.width, height: space.height - rect.height });
             }
-
-            sheet.freeSpaces.splice(sheet.freeSpaces.indexOf(space), 1);
-            sheet.freeSpaces.push(...newSpaces);
         }
 
         function drawSheets() {
-            let offsetX = 0;
-            let offsetY = 0;
-            let gap = 20;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = "14px Arial";
+            let offsetX = 0, offsetY = 0, gap = 20;
 
             for (let sheet of sheets) {
                 ctx.strokeRect(offsetX, offsetY, SHEET_WIDTH, SHEET_HEIGHT);
