@@ -68,12 +68,11 @@ function finalizePlacement(sheet, space, rect) {
 }
 
 function splitFreeSpace(sheet, space, rect) {
-    if (space.width > rect.width) {
-        sheet.freeSpaces.add({ x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: space.height });
-    }
-    if (space.height > rect.height) {
-        sheet.freeSpaces.add({ x: space.x, y: space.y + rect.height, width: rect.width, height: space.height - rect.height });
-    }
+    let rightSpace = { x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: space.height };
+    let bottomSpace = { x: space.x, y: space.y + rect.height, width: space.width, height: space.height - rect.height };
+
+    if (rightSpace.width > 0 && rightSpace.height > 0) sheet.freeSpaces.add(rightSpace);
+    if (bottomSpace.width > 0 && bottomSpace.height > 0) sheet.freeSpaces.add(bottomSpace);
 }
 
 function drawSheet() {
