@@ -21,7 +21,6 @@ function startPacking() {
         let rectangles = JSON.parse(inputText).map(r => 
             r.width < r.height ? { width: r.height, height: r.width } : { width: r.width, height: r.height }
         );
-        
 
         rectangles.sort((a, b) => {
             let areaDiff = b.width * b.height - a.width * a.height;
@@ -69,4 +68,21 @@ function placeRectangle(sheet, rect) {
         }
     }
     return false;
+}
+
+function finalizePlacement(sheet, space, rect) {
+    rect.x = space.x;
+    rect.y = space.y;
+    sheet.rectangles.push(rect);
+    sheet.freeSpaces.delete(space);
+    splitFreeSpace(sheet, space, rect);
+    return true;
+}
+
+function splitFreeSpace(sheet, space, rect) {
+    let rightSpace = { x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: rect.height };
+    let bottomSpace = { x: space.x, y: space.y + rect.height, width: space.width, height: space.height - rect.height };
+
+    if (rightSpace.width > 0 && rightSpace.height > 0) sheet.freeSpaces.add(rightSpace);
+    if (bottomSpace.width > 0 && bottomSpace.height > 0) sheet.freeSpaces.add(bottomSpace);
 }
