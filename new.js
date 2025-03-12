@@ -17,10 +17,10 @@ function createSheet() {
 function startPacking() {
     try {
         const inputText = document.getElementById("inputData").value;
-        // let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
-        let rectangles = JSON.parse(inputText).map(r => 
+        let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
+        /*let rectangles = JSON.parse(inputText).map(r => 
             r.width < r.height ? { width: r.height, height: r.width } : { width: r.width, height: r.height }
-        );
+        );*/
 
         rectangles.sort((a, b) => {
             let areaDiff = b.width * b.height - a.width * a.height;
@@ -29,20 +29,23 @@ function startPacking() {
         console.table(rectangles);
 
         sheet = createSheet();
+        let remainingSpace = SHEET_WIDTH * SHEET_HEIGHT;
         let failedRects = [];
 
         for (let rect of rectangles) {
-            if (!placeRectangle(sheet, rect)) {
-                failedRects.push(`(${rect.width}x${rect.height})`);
+            let placed = placeRectangle(sheet, rect);
+            if (!placed) {
+                failedRects.push({ width: rect.width, height: rect.height });
+            } else {
+                remainingSpace -= rect.width * rect.height;
             }
         }
 
-        if (failedRects.length > 0) {
+        /* if (failedRects.length > 0) {
             alert(`Ошибка: Не удалось разместить следующие прямоугольники: ${failedRects.join(", ")}`);
             return;
-        }
+        }*/
 
-        const remainingSpace = Array.from(sheet.freeSpaces).reduce((sum, space) => sum + space.width * space.height, 0);
         document.getElementById("freeSpaceInfo").textContent = 
             `Свободная площадь на листе: ${Math.floor((remainingSpace / (SHEET_WIDTH * SHEET_HEIGHT)) * 100)}%`;
 
