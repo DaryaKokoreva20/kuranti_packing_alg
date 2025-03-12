@@ -48,3 +48,25 @@ function startPacking() {
         alert(`Ошибка: ${error}`);
     }
 }
+
+function placeRectangle(sheet, rect) {
+    for (let space of sheet.freeSpaces) {
+        let tempRect = { x: space.x, y: space.y, width: rect.width, height: rect.height };
+
+        if (tempRect.width <= space.width && tempRect.height <= space.height) {
+            if (!isOverlapping(sheet, tempRect)) {
+                return finalizePlacement(sheet, space, tempRect);
+            }
+        }
+
+        // Проверяем вариант с поворотом
+        tempRect = { x: space.x, y: space.y, width: rect.height, height: rect.width };
+
+        if (tempRect.width <= space.width && tempRect.height <= space.height) {
+            if (!isOverlapping(sheet, tempRect)) {
+                return finalizePlacement(sheet, space, tempRect);
+            }
+        }
+    }
+    return false;
+}
