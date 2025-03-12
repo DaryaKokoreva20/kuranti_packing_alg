@@ -18,14 +18,22 @@ function startPacking() {
     try {
         const inputText = document.getElementById("inputData").value;
         let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
-        /*let rectangles = JSON.parse(inputText).map(r => 
-            r.width < r.height ? { width: r.height, height: r.width } : { width: r.width, height: r.height }
-        );*/
-
-        rectangles.sort((a, b) => {
+        /* let rectangles = JSON.parse(inputText).map(r => 
+            r.width > r.height ? { width: r.height, height: r.width } : { width: r.width, height: r.height }
+        ); */
+        
+        // сначала по площади, потом по наибольшей стороне:
+        /*rectangles.sort((a, b) => {
             let areaDiff = b.width * b.height - a.width * a.height;
             return areaDiff !== 0 ? areaDiff : Math.max(b.width, b.height) - Math.max(a.width, a.height);
+        });*/
+
+        // сначала по наибольшей стороне, потом по площади:
+        rectangles.sort((a, b) => {
+            let maxSideDiff = Math.max(b.width, b.height) - Math.max(a.width, a.height);
+            return maxSideDiff !== 0 ? maxSideDiff : (b.width * b.height) - (a.width * a.height);
         });
+        
         console.table(rectangles);
 
         sheet = createSheet();
