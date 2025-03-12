@@ -19,7 +19,10 @@ function startPacking() {
         const inputText = document.getElementById("inputData").value;
         let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
 
-        rectangles.sort((a, b) => b.width * b.height - a.width * a.height); // Сортировка по убыванию площади
+        rectangles.sort((a, b) => {
+            let areaDiff = b.width * b.height - a.width * a.height;
+            return areaDiff !== 0 ? areaDiff : Math.max(b.width, b.height) - Math.max(a.width, a.height);
+        });
 
         sheet = createSheet();
         let failedRects = [];
