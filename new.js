@@ -17,7 +17,11 @@ function createSheet() {
 function startPacking() {
     try {
         const inputText = document.getElementById("inputData").value;
-        let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
+        // let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
+        let rectangles = JSON.parse(inputText).map(r => 
+            r.width < r.height ? { width: r.height, height: r.width } : { width: r.width, height: r.height }
+        );
+        
 
         rectangles.sort((a, b) => {
             let areaDiff = b.width * b.height - a.width * a.height;
