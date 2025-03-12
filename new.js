@@ -23,6 +23,7 @@ function startPacking() {
             let areaDiff = b.width * b.height - a.width * a.height;
             return areaDiff !== 0 ? areaDiff : Math.max(b.width, b.height) - Math.max(a.width, a.height);
         });
+        console.table(rectangles);
 
         sheet = createSheet();
         let failedRects = [];
