@@ -8,31 +8,35 @@ let sheet;
 function startPacking() {
     try {
         const inputText = document.getElementById("inputData").value;
-        let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
+        let rectangles = JSON.parse(inputText).map(r => ({ width: r.w, height: r.h }));
 
         rectangles.sort((a, b) => b.width * b.height - a.width * a.height); // Сортировка по убыванию площади
 
         sheet = createSheet();
+        let remainingSpace = SHEET_WIDTH * SHEET_HEIGHT;
         let failedRects = [];
 
         for (let rect of rectangles) {
-            if (!placeRectangle(sheet, rect)) {
-                failedRects.push(`(${rect.width}x${rect.height})`);
+            let placed = placeRectangle(sheet, rect);
+            if (!placed) {
+                failedRects.push({ width: rect.width, height: rect.height });
+            } else {
+                remainingSpace -= rect.width * rect.height;
             }
         }
 
         if (failedRects.length > 0) {
-            alert(`Ошибка: Не удалось разместить следующие прямоугольники: ${failedRects.join(", ")}`);
+            let failedSizes = failedRects.map(r => `(${r.width}x${r.height})`).join(", ");
+            alert(`Ошибка: Не удалось разместить следующие прямоугольники: ${failedSizes}`);
             return;
         }
 
-        const remainingSpace = Array.from(sheet.freeSpaces).reduce((sum, space) => sum + space.width * space.height, 0);
         document.getElementById("freeSpaceInfo").textContent = 
             `Свободная площадь на листе: ${Math.floor((remainingSpace / (SHEET_WIDTH * SHEET_HEIGHT)) * 100)}%`;
 
         drawSheet();
     } catch (error) {
-        alert(`Ошибка: ${error}`);
+        alert("Ошибка в формате JSON! Проверь ввод.");
     }
 }
 
@@ -40,37 +44,22 @@ function createSheet() {
     return {
         width: SHEET_WIDTH,
         height: SHEET_HEIGHT,
-        freeSpaces: new Set([{ x: 0, y: 0, width: SHEET_WIDTH, height: SHEET_HEIGHT }]),
+        freeSpaces: [{ x: 0, y: 0, width: SHEET_WIDTH, height: SHEET_HEIGHT }],
         rectangles: []
     };
 }
 
-function isOverlapping(sheet, rect) {
-    return sheet.rectangles.some(r =>
-        !(rect.x + rect.width <= r.x ||  // rect справа от r
-          rect.x >= r.x + r.width ||  // rect слева от r
-          rect.y + rect.height <= r.y ||  // rect ниже r
-          rect.y >= r.y + r.height)  // rect выше r
-    );
-}
-
 function placeRectangle(sheet, rect) {
-    for (let space of sheet.freeSpaces) {
-        let tempRect = { x: space.x, y: space.y, width: rect.width, height: rect.height };
+    for (let i = 0; i < sheet.freeSpaces.length; i++) {
+        let space = sheet.freeSpaces[i];
 
-        if (tempRect.width <= space.width && tempRect.height <= space.height) {
-            if (!isOverlapping(sheet, tempRect)) {
-                return finalizePlacement(sheet, space, tempRect);
-            }
+        if (rect.width <= space.width && rect.height <= space.height) {
+            return finalizePlacement(sheet, space, rect);
         }
 
-        // Проверяем вариант с поворотом
-        tempRect = { x: space.x, y: space.y, width: rect.height, height: rect.width };
-
-        if (tempRect.width <= space.width && tempRect.height <= space.height) {
-            if (!isOverlapping(sheet, tempRect)) {
-                return finalizePlacement(sheet, space, tempRect);
-            }
+        if (rect.height <= space.width && rect.width <= space.height) {
+            [rect.width, rect.height] = [rect.height, rect.width];
+            return finalizePlacement(sheet, space, rect);
         }
     }
     return false;
@@ -80,20 +69,19 @@ function finalizePlacement(sheet, space, rect) {
     rect.x = space.x;
     rect.y = space.y;
     sheet.rectangles.push(rect);
-    sheet.freeSpaces.delete(space);
-    splitFreeSpace(sheet, space, rect);
+    updateFreeSpaces(sheet, space, rect);
     return true;
 }
 
-function splitFreeSpace(sheet, space, rect) {
-    let rightSpace = { x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: space.height };
-    let bottomSpace = { x: space.x, y: space.y + rect.height, width: space.width, height: space.height - rect.height };
+function updateFreeSpaces(sheet, space, rect) {
+    sheet.freeSpaces = sheet.freeSpaces.filter(s => s !== space);
 
-    if (rightSpace.width > 0 && rightSpace.height > 0) sheet.freeSpaces.add(rightSpace);
-    if (bottomSpace.width > 0 && bottomSpace.height > 0) sheet.freeSpaces.add(bottomSpace);
-
-    sheet.freeSpaces = new Set([...sheet.freeSpaces].filter(s => s !== space));
-
+    if (space.width - rect.width > 0) {
+        sheet.freeSpaces.push({ x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: space.height });
+    }
+    if (space.height - rect.height > 0) {
+        sheet.freeSpaces.push({ x: space.x, y: space.y + rect.height, width: rect.width, height: space.height - rect.height });
+    }
 }
 
 function drawSheet() {
