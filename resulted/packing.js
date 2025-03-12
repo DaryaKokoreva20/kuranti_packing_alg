@@ -8,7 +8,7 @@ let sheet;
 function startPacking() {
     try {
         const inputText = document.getElementById("inputData").value;
-        let rectangles = JSON.parse(inputText).map(r => ({ width: r.w, height: r.h }));
+        let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
 
         rectangles.sort((a, b) => b.width * b.height - a.width * a.height); // Сортировка по убыванию площади
 
@@ -32,7 +32,7 @@ function startPacking() {
 
         drawSheet();
     } catch (error) {
-        alert("Ошибка в формате JSON! Проверь ввод.");
+        alert(`Ошибка: ${error}`);
     }
 }
 
@@ -45,14 +45,32 @@ function createSheet() {
     };
 }
 
+function isOverlapping(sheet, rect) {
+    return sheet.rectangles.some(r =>
+        !(rect.x + rect.width <= r.x ||  // rect справа от r
+          rect.x >= r.x + r.width ||  // rect слева от r
+          rect.y + rect.height <= r.y ||  // rect ниже r
+          rect.y >= r.y + r.height)  // rect выше r
+    );
+}
+
 function placeRectangle(sheet, rect) {
     for (let space of sheet.freeSpaces) {
-        if (rect.width <= space.width && rect.height <= space.height) {
-            return finalizePlacement(sheet, space, rect);
+        let tempRect = { x: space.x, y: space.y, width: rect.width, height: rect.height };
+
+        if (tempRect.width <= space.width && tempRect.height <= space.height) {
+            if (!isOverlapping(sheet, tempRect)) {
+                return finalizePlacement(sheet, space, tempRect);
+            }
         }
-        if (rect.height <= space.width && rect.width <= space.height) {
-            [rect.width, rect.height] = [rect.height, rect.width];
-            return finalizePlacement(sheet, space, rect);
+
+        // Проверяем вариант с поворотом
+        tempRect = { x: space.x, y: space.y, width: rect.height, height: rect.width };
+
+        if (tempRect.width <= space.width && tempRect.height <= space.height) {
+            if (!isOverlapping(sheet, tempRect)) {
+                return finalizePlacement(sheet, space, tempRect);
+            }
         }
     }
     return false;
@@ -73,6 +91,9 @@ function splitFreeSpace(sheet, space, rect) {
 
     if (rightSpace.width > 0 && rightSpace.height > 0) sheet.freeSpaces.add(rightSpace);
     if (bottomSpace.width > 0 && bottomSpace.height > 0) sheet.freeSpaces.add(bottomSpace);
+
+    sheet.freeSpaces = new Set([...sheet.freeSpaces].filter(s => s !== space));
+
 }
 
 function drawSheet() {
