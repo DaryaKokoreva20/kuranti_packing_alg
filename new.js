@@ -86,3 +86,15 @@ function splitFreeSpace(sheet, space, rect) {
     if (rightSpace.width > 0 && rightSpace.height > 0) sheet.freeSpaces.add(rightSpace);
     if (bottomSpace.width > 0 && bottomSpace.height > 0) sheet.freeSpaces.add(bottomSpace);
 }
+
+function drawSheet() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeRect(0, 0, SHEET_WIDTH, SHEET_HEIGHT);
+    ctx.fillText("Лист 1", 10, 20);
+
+    for (let rect of sheet.rectangles) {
+        ctx.fillStyle = `hsl(${Math.random() * 360}, 60%, 70%)`;
+        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+    }
+}
