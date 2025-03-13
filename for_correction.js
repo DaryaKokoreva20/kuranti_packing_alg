@@ -83,12 +83,30 @@ function finalizePlacement(sheet, space, rect) {
 function updateFreeSpaces(sheet, space, rect) {
     sheet.freeSpaces = sheet.freeSpaces.filter(s => s !== space);
 
-    if (space.width - rect.width > 0) {
+    /*if (space.width - rect.width > 0) {
         sheet.freeSpaces.push({ x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: space.height });
     }
     if (space.height - rect.height > 0) {
         sheet.freeSpaces.push({ x: space.x, y: space.y + rect.height, width: rect.width, height: space.height - rect.height });
+    }*/
+    if (space.width - rect.width > 15) {
+        sheet.freeSpaces.push({ x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: space.height });
+        if (space.height - rect.height > 0) {
+            sheet.freeSpaces.push({ x: space.x, y: space.y + rect.height, width: rect.width, height: space.height - rect.height });
+        }
     }
+    else if (space.width - rect.width > 0) {
+        if (space.height - rect.height > 0) {
+            sheet.freeSpaces.push({ x: space.x + rect.width, y: space.y, width: space.width - rect.width, height: rect.height });
+            sheet.freeSpaces.push({ x: space.x, y: space.y + rect.height, width: space.width, height: space.height - rect.height });
+        }
+    }
+    else {
+        if (space.height - rect.height > 0) {
+            sheet.freeSpaces.push({ x: space.x, y: space.y + rect.height, width: rect.width, height: space.height - rect.height });
+        }
+    }
+
     console.table(sheet.freeSpaces);
 }
 
