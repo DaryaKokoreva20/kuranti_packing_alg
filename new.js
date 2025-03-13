@@ -17,7 +17,7 @@ function createSheet() {
 function startPacking() {
     try {
         const inputText = document.getElementById("inputData").value;
-        let rectangles = JSON.parse(inputText).map(r => ({ width: r.width, height: r.height }));
+        let rectangles = JSON.parse(inputText).map(r => ({ width: r.w, height: r.h }));
         /* let rectangles = JSON.parse(inputText).map(r => 
             r.width > r.height ? { width: r.height, height: r.width } : { width: r.width, height: r.height }
         ); */
@@ -63,7 +63,7 @@ function startPacking() {
     }
 }
 
-function placeRectangle(sheet, rect) {
+/*function placeRectangle(sheet, rect) {
     for (let space of sheet.freeSpaces) {
         let tempRect = { x: space.x, y: space.y, width: rect.width, height: rect.height };
 
@@ -78,8 +78,36 @@ function placeRectangle(sheet, rect) {
             return finalizePlacement(sheet, space, tempRect);
         }
     }
+    return false; 
+}*/
+function placeRectangle(sheet, rect) {
+    let bestFit = null;
+    let minWastedSpace = Infinity;
+
+    for (let space of sheet.freeSpaces) {
+        let orientations = [
+            { x: space.x, y: space.y, width: rect.width, height: rect.height },
+            { x: space.x, y: space.y, width: rect.height, height: rect.width }
+        ];
+
+        for (let tempRect of orientations) {
+            if (tempRect.width <= space.width && tempRect.height <= space.height) {
+                let wastedSpace = (space.width * space.height) - (tempRect.width * tempRect.height);
+                if (wastedSpace < minWastedSpace) {
+                    minWastedSpace = wastedSpace;
+                    bestFit = { rect: tempRect, space: space };
+                }
+            }
+        }
+    }
+
+    if (bestFit) {
+        return finalizePlacement(sheet, bestFit.space, bestFit.rect);
+    }
     return false;
+    
 }
+
 
 function finalizePlacement(sheet, space, rect) {
     rect.x = space.x;

@@ -92,7 +92,6 @@ function updateFreeSpaces(sheet, space, rect) {
     console.table(sheet.freeSpaces);
 }
 
-
 function drawSheet() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.strokeRect(0, 0, SHEET_WIDTH, SHEET_HEIGHT);

@@ -25,11 +25,11 @@ function startPacking() {
             }
         }
 
-        if (failedRects.length > 0) {
+        /*if (failedRects.length > 0) {
             let failedSizes = failedRects.map(r => `(${r.width}x${r.height})`).join(", ");
             alert(`Ошибка: Не удалось разместить следующие прямоугольники: ${failedSizes}`);
             return;
-        }
+        }*/
 
         document.getElementById("freeSpaceInfo").textContent = 
             `Свободная площадь на листе: ${Math.floor((remainingSpace / (SHEET_WIDTH * SHEET_HEIGHT)) * 100)}%`;
