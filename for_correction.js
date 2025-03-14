@@ -68,6 +68,30 @@ function placeRectangle(sheet, rect) {
             [rect.width, rect.height] = [rect.height, rect.width];
             return finalizePlacement(sheet, space, rect);
         }
+
+        // Уменьшение прямоугольника, если он больше свободного пространства не более чем на 2
+        /*if (rect.width - 2 <= space.width && rect.height <= space.height) {
+            rect.width = space.width;
+            return finalizePlacement(sheet, space, rect);
+        }
+
+        if (rect.width <= space.width && rect.height - 2 <= space.height) {
+            rect.height = space.height;
+            return finalizePlacement(sheet, space, rect);
+        }
+
+        if (rect.height - 2 <= space.width && rect.width <= space.height) {
+            [rect.width, rect.height] = [rect.height, rect.width];
+            rect.height = space.width;
+            return finalizePlacement(sheet, space, rect);
+        }
+
+        if (rect.height <= space.width && rect.width - 2 <= space.height) {
+            [rect.width, rect.height] = [rect.height, rect.width];
+            rect.width = space.height;
+            return finalizePlacement(sheet, space, rect);
+        }*/
+
     }
     return false;
 }
@@ -106,6 +130,9 @@ function updateFreeSpaces(sheet, space, rect) {
             sheet.freeSpaces.push({ x: space.x, y: space.y + rect.height, width: rect.width, height: space.height - rect.height });
         }
     }
+    console.table(sheet.freeSpaces);
+    sheet.freeSpaces.reverse();
+
 
     console.table(sheet.freeSpaces);
 }
